@@ -9,7 +9,7 @@
 #include "storage.h"
 
 // GUI configuration, see gui.h for more details
-dispWin_t GUI_DISPLAY_WINDOW = { .x1 = 40, .y1 = 53, .x2 = 280, .y2 = 188 };
+dispWin_t GUI_DISPLAY_WINDOW = { .x1 = 10, .y1 = 10, .x2 = 230, .y2 = 230 };
 jlocale_t GUI_LOCALE = LOCALE_EN;
 bool GUI_VIEW_DEBUG = false;
 uint8_t GUI_TARGET_FRAMERATE = 15;

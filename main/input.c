@@ -177,6 +177,38 @@ void wheel_init(void)
     iot_button_set_evt_cb(btn_handle_next, BUTTON_CB_PUSH, button_pressed, &button_B_pressed);
     iot_button_set_evt_cb(btn_handle_next, BUTTON_CB_RELEASE, button_released, &button_B_pressed);
 }
+
+#elif defined(CONFIG_BOARD_TYPE_TTGO_LILYGO_CAMERA_PLUS) || defined(CONFIG_BOARD_TYPE_WAVESHARE_ESP32_ONE) 
+// wheel_init() to mock wheel with buttons
+// Long press buttons mocks wheel spin (multiple events)
+static bool skip_next_release = false;
+static void button_A_released(void* arg) 
+{ 
+    if (!skip_next_release)
+        wheel_next();
+    else
+        skip_next_release = false;
+}
+static void button_A_long(void* arg) 
+{
+    wheel_prev();
+    skip_next_release = true;
+}
+static void button_B_pressed(void* arg) 
+{
+    gui_front_click();
+}
+
+void wheel_init(void)
+{
+    button_handle_t btn_A_handle = iot_button_create(CONFIG_INPUT_BTN_A, BUTTON_ACTIVE_LOW);
+    iot_button_set_evt_cb(btn_A_handle, BUTTON_CB_RELEASE, button_A_released, NULL);
+    iot_button_add_custom_cb(btn_A_handle, 1, button_A_long, NULL);
+
+    button_handle_t btn_B_handle = iot_button_create(CONFIG_INPUT_BTN_B, BUTTON_ACTIVE_LOW);
+    iot_button_set_evt_cb(btn_B_handle, BUTTON_CB_PUSH, button_B_pressed, NULL);
+}
+
 #elif defined(CONFIG_BOARD_TYPE_M5_STICKC_PLUS)
 /*
 M5StickC-Plus is similar to the TTGO T-Display in that it is two buttons,
