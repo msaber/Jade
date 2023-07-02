@@ -170,7 +170,7 @@ bool jade_process_init(TaskHandle_t** serial_h, TaskHandle_t** ble_h, TaskHandle
     JADE_ASSERT(ble_out);
 #endif
 
-#if defined(CONFIG_BOARD_TYPE_JADE) || defined(CONFIG_BOARD_TYPE_JADE_V1_1)
+#if defined(CONFIG_BOARD_TYPE_JADE) || defined(CONFIG_BOARD_TYPE_JADE_V1_1) || defined(CONFIG_BOARD_TYPE_WAVESHARE_ESP32_ONE)
     qr_handle = xTaskGetCurrentTaskHandle();
     qr_out = create_ringbuffer(2 * MAX_OUTPUT_MSG_SIZE + 32);
     JADE_ASSERT(qr_out);

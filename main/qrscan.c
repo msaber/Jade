@@ -7,6 +7,10 @@
 #include "qrscan.h"
 #include "sensitive.h"
 #include "utils/malloc_ext.h"
+#include "esp_code_scanner.h"
+#include "esp_log.h"
+#include "esp_system.h"
+#include "esp_timer.h"
 
 // Inspect qrcodes and try to extract payload - whether any were seen and any
 // string data extracted are stored in the qr_data struct passed.
@@ -97,6 +101,76 @@ static bool qr_recognize(
         qr_data->len = 0;
         return false;
     }
+
+    // Make the completed QR image capture count as 'activity' against the idle timer
+    idletimer_register_activity(true);
+
+    // QR data was extracted and validated - return true
+    return true;
+}
+
+
+static bool qr_recognize2(
+    const size_t width, const size_t height, const uint8_t* data, const size_t len, void* ctx_qr_data)
+{
+    JADE_ASSERT(data);
+    JADE_ASSERT(ctx_qr_data);
+    JADE_ASSERT(len == width * height);
+
+    qr_data_t* const qr_data = (qr_data_t*)ctx_qr_data;
+    JADE_ASSERT(qr_data);
+    JADE_ASSERT(qr_data->q);
+
+/////////////////
+    const char * TAG = "qrscan";
+    esp_code_scanner_config_t config = {ESP_CODE_SCANNER_MODE_FAST, ESP_CODE_SCANNER_IMAGE_GRAY, width, height};
+
+    esp_image_scanner_t *esp_scn = esp_code_scanner_create();
+    if (!esp_scn)
+    {
+        ESP_LOGE(TAG, "Could not create scanner.");
+        return false;
+    }
+    if (esp_code_scanner_set_config(esp_scn, config) == ESP_FAIL)
+    {
+        ESP_LOGE(TAG, "Failed to config scanner.");
+        esp_code_scanner_destroy(esp_scn);
+        return false;
+    }
+
+    ESP_LOGD(TAG, "Scanning ...");
+    int64_t startTime = esp_timer_get_time();
+    int decodedCount = esp_code_scanner_scan_image(esp_scn, data);
+    if (!decodedCount)
+    {
+        ESP_LOGD(TAG, "Nothing found.");
+        esp_code_scanner_destroy(esp_scn);
+        return false;
+    }
+
+    ESP_LOGD(TAG, "Decoding ...");
+    esp_code_scanner_symbol_t results = esp_code_scanner_result(esp_scn);
+    int decodeTimeMs = (esp_timer_get_time() - startTime) / 1000;
+    ESP_LOGI(TAG, "Results decoded in %d ms", decodeTimeMs);
+
+    memcpy(qr_data->data, results.data, results.datalen);
+    qr_data->data[results.datalen] = '\0';
+    qr_data->len = results.datalen;
+    
+    // esp_code_scanner_symbol_t* next = &results;
+    // esp_code_scanner_symbol_t* tmp = NULL;
+    // while (next)
+    // {
+    //     decodedResults.push_back(CodeScannerResult(results.type_name,results.data, results.datalen));
+    //     decodedResults.push_back(CodeScannerResult(next->type_name, next->data));
+    //     tmp = next;
+    //     next = next->next;
+    //     free(tmp);
+    // }
+
+    esp_code_scanner_destroy(esp_scn);
+
+/////////////////
 
     // Make the completed QR image capture count as 'activity' against the idle timer
     idletimer_register_activity(true);
